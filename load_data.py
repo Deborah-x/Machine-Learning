@@ -1,15 +1,21 @@
 import json
 
-path = "train_data_all.json"
-with open(path, 'r') as f:
-    dataset = json.load(f)
-    # print(dataset)
-# print(len(dataset))
+def load_dataset():
+    path = "train_data_all.json"
+    with open(path, 'r') as f:
+        dataset = json.load(f)
+        return dataset
 
-count = 0
-for val in dataset:
-    if val['weight'] != '' and val['height'] != '' and val['fit'] != '' and val['size'] != '' and val['size'] != 'NONE' and val['usually_wear'] != '':
-        count += 1
+def key_num(*args):
+    print(args)
+    count = 0
+    for index in load_dataset():
+        flag = 1
+        for key in args:
+            if index[key] == '':
+                flag = 0
+                break
+        count += flag
+    return count
 
-print(count)
-
+print(key_num('fit', 'weight', 'height', 'size', 'usually_wear'))
