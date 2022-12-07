@@ -24,26 +24,21 @@ def key_num(data, *args):
 
 # print(key_num('fit', 'weight', 'height', 'size', 'usually_wear'))
 
-data_raw = load_dataset()
-# with open('data_proc', 'w+') as f:
-#     wf = csv.writer(f)
-#     wf.writerows(data_raw)
-# data_df = pd.DataFrame(data)
-# data_df = pd.read_json("./train_data_all.json")
-# data_fit = data_df.loc[data_df['fit']!='']
-# print(data_fit.head())
+def drop_nan():
+    data_raw = load_dataset()
+    pd.DataFrame(data_raw).to_csv('data_proc.txt', index=False)
+    pd.read_csv('data_proc.txt').dropna().to_csv('data_proc.txt', index=False)
+    # df = pd.read_csv('data_proc.txt')
+    # return df
 
-# data_raw = np.array(data)
-# np.save('data_raw.npy', data_raw)
-# t = np.load('data_raw.npy', allow_pickle=True)
-# t = t.tolist()
-# print(t[1])
-# np.savetxt('data_proc', data_raw, delimiter=',', newline='\n', fmt="%s", encoding='utf-8')
-# data_proc = np.loadtxt('data_proc', dtype=list, unpack=True, encoding='utf-8')
-# print(data_proc)
-df = pd.DataFrame(data_raw)
-df.to_csv('data_proc', index=False)
-df_ = pd.read_csv('data_proc')
-# print(df_.dropna())
-df_ = df_.dropna()
-print(df_)
+def convert_h():
+    # 将身高从英尺转化为标准单位厘米, 保留两位小数
+    # 1ft = 30.48cm
+    # 1in =  2.54cm
+    df = drop_nan()
+    df = pd.read_csv('data_proc.txt')
+    df['height'] = df['height'].map(lambda x: round(int(x[0]) * 30.48 + int(x[3]) * 2.54, 2))
+    df.to_csv('data_proc.txt', index=False)
+    print(df['height'])
+
+convert_h()
