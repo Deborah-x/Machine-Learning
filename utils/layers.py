@@ -120,7 +120,9 @@ def softmax_loss(x, y):
     x = np.exp(x)
     x_exp = x.copy()   ### 要保留值，请使用深拷贝
     x[range(num_train), y] /= np.sum(x, axis=1)
+    # smooth_loss = - np.sum(np.log(x[range(num_train), y] + 1e-10))
     loss = - np.sum(np.log(x[range(num_train), y]))
+    # loss = - np.sum(np.log(x[range(num_train), y] + 1e-10))
     loss /= num_train
 
     dx = x_exp / np.sum(x_exp, axis=1, keepdims=True)
@@ -236,7 +238,7 @@ def batchnorm_backward(dout, cache):
     dx = dx_norm * (1 / np.sqrt(sample_var+eps)) - dx_norm * (x-sample_mean) / ((sample_var+eps) ** 1.5 ) 
 
     dx = (1 / np.sqrt(sample_var + eps)) * (dx_norm - (1 / num_train) * ( np.sum(dx_norm, axis=0) \
-      + (1 / (sample_var + eps)) * (x - sample_mean) * np.sum(dx_norm * (x - sample_mean),axis=0)))     
+      + (1 / (sample_var + eps)) * (x - sample_mean) * np.sum(dx_norm * (x - sample_mean),axis=0)))  
 
     
 
