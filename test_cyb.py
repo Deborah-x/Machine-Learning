@@ -26,8 +26,8 @@ for i in range(len(set)-1,-1,-1):#倒叙删除
       del(set[i+1])
 
 #分出训练集和测试集,一个元素是一个代表一个sample的字符串
-test_set = set[:5000]
-train_set = set[5000:]
+test_set = set[:3000]
+train_set = set[3000:]
 
 def delete_len1(list):
    for i in range(len(list) - 1, -1, -1):
@@ -93,31 +93,64 @@ for word , value in n_l_dict.items():
 
 #test
 predict = 0 # 1 =small. 2 = true to size. 3 = large
-tp = 0
-fp = 0
-tn = 0
-fn = 0
-def Predict(word_list):#之后在每个if分支中插入Predict判断结果
-#对每个label来说，猜他是positive，猜别的都是negative
+confusion_matrix = [[0,0,0], [0,0,0], [0,0,0]]#预测值，真实值，第二元素是预测为2，真实为1
+accuracy = 0
+y_t2s = math.log10(P_t2s)
+y_s = math.log10(P_s)
+y_l = math.log10(P_l)
+def Predict(word_list, label, y_t2s, y_s, y_l):#之后在每个if分支中插入Predict判断结果
+   for i in range(len(word_list)):
+      # if spam_train.__contains__(word_list[i]):
+      temp1 = P_k_s.get(word_list[i], 1)
+      temp2 = P_k_t2s.get(word_list[i], 1)
+      temp3 = P_k_l.get(word_list[i], 1)
+      if temp1 == 1 or temp2 == 1 or temp3 ==1: continue
+      y_s += math.log10(temp1)
+      y_t2s += math.log10(temp2)
+      y_l += math.log10(temp3)
+      if y_s >= y_t2s:
+         predict = 1
+      elif y_t2s >= y_l:
+         predict = 2
+      else:
+         predict = 3
+      return predict-1
 
 
 
 for i in range(len(test_set)):
    #words = train_set[i].split(',')#按逗号拆每行
-   line= test_set[0]
+   line= test_set[i]
    if line.__contains__("True to Size"):
       line = line.replace('True to Size', '')
       word_list = split2word(line.split(','))
+      confusion_matrix[2-1][Predict(word_list, 2, y_t2s, y_s, y_l)] += 1
    if line.__contains__("Small"):
       line = line.replace('Small', '')
       word_list = split2word(line.split(','))
+      confusion_matrix[1-1][Predict(word_list, 1, y_t2s, y_s, y_l)] += 1
    if line.__contains__("Large"):
       line = line.replace('Large', '')
       word_list = split2word(line.split(','))
+      confusion_matrix[3-1][Predict(word_list, 3, y_t2s, y_s, y_l)] += 1
 
-line = test_set[0].replace('True to Size','')
+accuracy_s = confusion_matrix[0][0]/(confusion_matrix[0][0]+confusion_matrix[1][0]+confusion_matrix[2][0])
+recall_s = confusion_matrix[0][0]/(confusion_matrix[0][0]+confusion_matrix[0][1]+confusion_matrix[0][2])
+accuracy_t2s = confusion_matrix[1][1]/(confusion_matrix[0][1]+confusion_matrix[1][1]+confusion_matrix[2][1])
+recall_t2s = confusion_matrix[1][1]/(confusion_matrix[1][0]+confusion_matrix[1][1]+confusion_matrix[1][2])
+accuracy_l = confusion_matrix[2][2]/(confusion_matrix[0][2]+confusion_matrix[1][2]+confusion_matrix[2][2])
+recall_l = confusion_matrix[2][2]/(confusion_matrix[2][0]+confusion_matrix[2][1]+confusion_matrix[2][2])
+print("accuracy_s is {}".format(accuracy_s))
+print("recall_s is {}".format(recall_s))
+print("accuracy_t2s is {}".format(accuracy_t2s))
+print("recall_t2s is {}".format(recall_t2s))
+print("accuracy_l is {}".format(accuracy_l))
+print("recall_l is {}".format(recall_l))
 
-# print(len(T2S_set))
-# print(len(S_set))
-# print(len(L_set))
-# print(T2S_set[:100])
+#result
+# accuracy_s is 0.3125
+# recall_s is 0.014204545454545454
+# accuracy_t2s is 0.7329302987197724
+# recall_t2s is 0.9951714147754708
+# accuracy_l is 0.2
+# recall_l is 0.0024390243902439024
