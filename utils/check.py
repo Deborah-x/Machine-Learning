@@ -4,6 +4,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 import numpy as np
 from torch.nn.utils import skip_init
+from pprint import pprint
 import json
 import os
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
@@ -28,7 +29,8 @@ class tinyNeuralNetwork(nn.Module):
         # To use numpy initialization, we need to skip the initialization of the weights and biases
         # see details: https://pytorch.org/tutorials/prototype/skip_param_init.html
         self.fc1 = skip_init(nn.Linear, 100, 1000)
-        self.fc2 = skip_init(nn.Linear, 1000, 10)
+        self.fc2 = skip_init(nn.Linear, 1000, 100)
+        self.fc3 = skip_init(nn.Linear, 100, 10)
         self.norm = nn.BatchNorm1d(1000)
         self.dropout = nn.Dropout(p=0.5)
 
@@ -39,22 +41,26 @@ class tinyNeuralNetwork(nn.Module):
         # note that y = xA^T + b, so the shape of weight is (out_features, in_features)
         self.fc1.weight.data = torch.from_numpy(weight_scale * np.random.normal(loc=0.0, scale=weight_scale, size=(100, 1000)).T)
         self.fc1.bias.data = torch.from_numpy(np.zeros(1000))
-        self.fc2.weight.data = torch.from_numpy(weight_scale * np.random.normal(loc=0.0, scale=weight_scale, size=(1000, 10)).T)
-        self.fc2.bias.data = torch.from_numpy(np.zeros(10))
-        # print(f"fc1 weight {self.fc1.weight.data.T}")
-        # print(f"fc2 weight {self.fc2.weight.data.T}")   
+        self.fc2.weight.data = torch.from_numpy(weight_scale * np.random.normal(loc=0.0, scale=weight_scale, size=(1000, 100)).T)
+        self.fc2.bias.data = torch.from_numpy(np.zeros(100))
+        self.fc3.weight.data = torch.from_numpy(weight_scale * np.random.normal(loc=0.0, scale=weight_scale, size=(100, 10)).T)
+        self.fc3.bias.data = torch.from_numpy(np.zeros(10))
+          
 
         self.relu = nn.ReLU()
         self.softmax = nn.Softmax(dim=1)
 
     def forward(self, x):
         y = self.fc1(x)
-        y = self.norm(y)
+        # y = self.norm(y)
         y = self.relu(y)
         # y = self.dropout(y)
         y = self.fc2(y)
-        loss = self.softmax(y)
-        return y, loss
+        # y = self.norm(y)
+        y = self.relu(y)
+        # y = self.dropout(y)
+        y = self.fc3(y)
+        return y
 
 class manualNN():
     def __init__(
@@ -309,7 +315,7 @@ if __name__ == '__main__':
         model.to(device).float()
         model.train()
 
-        test_model = manualNN(100, [1000], 10, seed=42, normalization="batchnorm", 
+        test_model = manualNN(100, [1000, 100], 10, seed=42, normalization=None, 
                         dropout_keep_ratio=1.0, weight_scale=1e-2)
 
         # Generate random input by numpy
@@ -317,7 +323,7 @@ if __name__ == '__main__':
         x = np.random.normal(loc=0.0, scale=100, size=(20000, 100))
         y = np.random.randint(0, 10, size=(20000,10))
         torch_input = torch.from_numpy(x).to(device).float()
-        torch_out, _ = model(torch_input)
+        torch_out = model(torch_input)
         torch_out_np = torch_out.cpu().detach().numpy()
 
         out, _ = test_model.predict(x, y)
@@ -325,7 +331,7 @@ if __name__ == '__main__':
         # Check the correctness of the forward pass
         err = rel_error(torch_out_np, out)
         print('\n'*2 + "Check the correctness of the forward pass")
-        if err < 1e-10:
+        if err < 1e-4:
             print(f"Forward pass is correct. Rel Error: {err}")
         else:
             print(f"Forward pass is wrong. Rel Error: {err}")
@@ -335,19 +341,23 @@ if __name__ == '__main__':
         model.to(device).float()
         model.train()
         creterion = nn.CrossEntropyLoss()
-        optimizer = optim.Adam(model.parameters(), lr=1e-3)
+        optimizer = optim.Adam(model.parameters(), lr=1e-1)
 
-        test_model = manualNN(100, [1000], 10, seed=42, normalization="batchnorm", 
-                        dropout_keep_ratio=1.0, weight_scale=1)
+        test_model = manualNN(100, [1000, 100], 10, seed=42, normalization=None, 
+                        dropout_keep_ratio=1.0, weight_scale=1, learning_rate=1e-1)
 
         # Generate random input by numpy
-        np.random.seed(42)
-        x = np.random.normal(loc=0.0, scale=100, size=(20000, 100))
-        y = np.random.randint(0, 10, size=(20000))
+        # np.random.seed(42)
+        x = np.random.normal(loc=0.0, scale=10, size=(200, 100))
+        y = np.random.randint(0, 10, size=(200))
         torch_input = torch.from_numpy(x).to(device).float()
-        torch_out, _ = model(torch_input)
+        torch_out = model(torch_input)
         torch_y = torch.from_numpy(y).to(device).long()
         torch_loss = creterion(torch_out, torch_y)
+        # implement L2 regularization
+        # torch_loss += 0.1 * sum([(p**2).sum() for p in model.parameters() if p.requires_grad])
+        # print(f"torch loss: {torch_loss.item()}")
+        optimizer.zero_grad()
         torch_loss.backward()
         optimizer.step()
         updated_params = []
@@ -359,11 +369,13 @@ if __name__ == '__main__':
         
         out, caches = test_model.predict(x, y)
         loss, dout = softmax_loss(out, y)
-        test_model.backward(dout, caches, optim=adam , lr=1e-3)
+        print(f"manual loss: {loss}")
+        test_model.backward(dout, caches, optim=adam , lr=1e-1)
         updated_params_manual = test_model.get_param()
         
         for name, param in test_model.get_param().items():
-            print(name, param.shape)
+            # print(name, param.shape)
+            pass
 
         # Check the correctness of the backward pass
         print('\n'*2 + "Check the correctness of the backward pass")
@@ -374,7 +386,11 @@ if __name__ == '__main__':
             except:
                 err = rel_error(value1.T, value2)
             errs.append(err)
-        print(f"errs: {errs}")        
+        if max(errs) < 1e-3:
+            print(f"Backward pass is correct. Max Rel Error: {max(errs)}")
+        else:
+            print(f"Backward pass is wrong. Max Rel Error: {max(errs)}")
+        pprint(errs)        
    
         
     test_forward()
