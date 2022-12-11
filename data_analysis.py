@@ -52,15 +52,22 @@ def convert_w(path):
 
 def convert_f(path):
     data = pd.read_csv(path)
-    data['fit'] = data['fit'].replace(['Small', 'True to Size', 'Large'], [-1, 0, 1])
+    data['fit'] = data['fit'].replace(['Small', 'True to Size', 'Large'], [0, 1, 2])
     data.to_csv(path, index=False)
 
 def convert_n(path):
     data = pd.read_csv(path)
     uni = data['item_name'].unique()
+    # new_list = [10*x for x in list(range(len(uni)))]
+    # map = dict(zip(uni, new_list))
     map = dict(zip(uni, list(range(len(uni)))))
     # print(map)
     data['item_name'] = data['item_name'].replace(map)
+    data.to_csv(path, index=False)
+
+def convert_r(path):
+    data = pd.read_csv(path)
+    data['rating'] = data['rating'].replace([0, 1, 2, 3, 4, 5], [0, 10, 20, 30, 40, 50])
     data.to_csv(path, index=False)
 
 def val_range(path, key):
@@ -76,13 +83,14 @@ def proc():
     convert_w(dpath)
     convert_f(dpath)
     convert_n(dpath)
+    # convert_r(dpath)
 
 def k_means():
     pass
 
 spath = 'data_raw.txt'
 dpath = 'data_proc.txt'
-# proc()
+proc()
 # print(val_range(dpath, 'rating'))
 # print(val_range(dpath, 'fit'))
 data = pd.read_csv(dpath)
