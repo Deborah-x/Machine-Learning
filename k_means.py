@@ -4,7 +4,7 @@ from tqdm import tqdm
 
 def read_data():
     path = 'data_proc.txt'
-    data = pd.read_csv(path)[['fit','height','weight']]
+    data = pd.read_csv(path)[['item_name','fit','height','weight']]
     # x1 = np.array(data['item_name'])
     # x2 = np.array(data['fit'])
     # x3 = np.array(data['height'])
@@ -80,15 +80,16 @@ def test(center):
     count = 0
     data_test = read_data()
     for i in tqdm(range(len(data_test))):
-        if dist_rank(center, data_test[i]) == data_test[i][0]:
+        if dist_rank(center, data_test[i]) == data_test[i][1]:
             count += 1
+        # print(dist_rank(center, data_test[i]))
 
     return count / len(data_test)
 
 # print(read_data()[:5])
 # print(init())
 # distance(init()[0], init()[1])
-center = Kmeans(50)
+center = Kmeans(100)
 print(test(center))
 
 # data = read_data()

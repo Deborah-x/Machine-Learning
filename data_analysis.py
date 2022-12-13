@@ -67,7 +67,7 @@ def convert_n(path):
 
 def convert_r(path):
     data = pd.read_csv(path)
-    data['rating'] = data['rating'].replace([0, 1, 2, 3, 4, 5], [0, 10, 20, 30, 40, 50])
+    # data['rating'] = data['rating'].replace([0, 1, 2, 3, 4, 5], [0, 10, 20, 30, 40, 50])
     data.to_csv(path, index=False)
 
 def val_range(path, key):
@@ -93,5 +93,9 @@ dpath = 'data_proc.txt'
 proc()
 # print(val_range(dpath, 'rating'))
 # print(val_range(dpath, 'fit'))
-data = pd.read_csv(dpath)
-print(data[['item_name','fit','height','weight','rating']])
+data = pd.read_csv(dpath)[['item_name','fit','height','weight','rating']]
+# print(data[['item_name','fit','height','weight','rating']])
+# data_t = 1000 * (data - data.mean())/data.std()
+# data_t['fit'] = data['fit'] * 10
+# data_t.to_csv(dpath, index=False)
+print(data)
