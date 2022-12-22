@@ -40,13 +40,33 @@ def convert_h(path):
     # 1ft = 30.48cm
     # 1in =  2.54cm
     df = pd.read_csv(path)
-    df['height'] = df['height'].map(lambda x: round(int(x[0]) * 30.48 + int(x[3]) * 2.54, 2) if re.match(r'\d\' \d\"', str(x)) else 162) # 162大概是身高的平均水平
+    column = df['height']
+    labels = df['fit']
+    column = column.map(lambda x: round(int(x[0]) * 30.48 + int(x[3]) * 2.54, 2) if re.match(r'\d\' \d\"', str(x)) else 164) # 162大概是身高的平均水平
+    av_label = {}
+    av_label[0] = column[labels == 0].mean(skipna=True)
+    av_label[1] = column[labels == 1].mean(skipna=True)
+    av_label[2] = column[labels == 2].mean(skipna=True)
+    for i in range(len(column)):
+        if column[i] == 0:
+            column[i] = av_label[labels[i]]
+    df['height'] = column
     df.to_csv(path, index=False)
     # print(df['height'])
 
 def convert_w(path):
     df = pd.read_csv(path)
-    df['weight'] = df['weight'].map(lambda x: int(x.strip('LBS')) if re.match(r'\d{2,3}LBS', x) else 140) # 140是体重的平均水平
+    column = df['weight']
+    labels = df['fit']
+    column = column.map(lambda x: int(x.strip('LBS')) if re.match(r'\d{2,3}LBS', x) else 140) # 140是体重的平均水平
+    av_label = {}
+    av_label[0] = column[labels == 0].mean(skipna=True)
+    av_label[1] = column[labels == 1].mean(skipna=True)
+    av_label[2] = column[labels == 2].mean(skipna=True)
+    for i in range(len(column)):
+        if column[i] == 0:
+            column[i] = av_label[labels[i]]
+    df['weight'] = column
     df.to_csv(path, index=False)
     # print(df['weight'])
 
@@ -79,11 +99,13 @@ def proc():
     spath = 'data_raw.txt'
     dpath = 'data_proc.txt'
     drop_nan(spath, dpath)
-    convert_h(dpath)
-    convert_w(dpath)
+    # convert_h(dpath)
+    # convert_w(dpath)
     convert_f(dpath)
     convert_n(dpath)
     # convert_r(dpath)
+    convert_h(dpath)
+    convert_w(dpath)
 
 def k_means():
     pass
@@ -92,10 +114,12 @@ build_data_raw()
 spath = 'data_raw.txt'
 dpath = 'data_proc.txt'
 proc()
-# print(val_range(dpath, 'rating'))
-print(val_range(dpath, 'fit'))
+# print(val_range(dpath, 'fit'))
 data = pd.read_csv(dpath)[['item_name','height','weight','rating','fit']]
+# print(data.size)
+# print(data[(data['fit'] == 0)].size)
+# print(data[(data['fit'] == 1)].size)
+# print(data[(data['fit'] == 2)].size)
 data_t = (data - data.mean())/data.std()
 data_t['fit'] = data['fit']
-# print(data['fit'])
 data_t.to_csv(dpath, index=False)
