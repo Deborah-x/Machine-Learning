@@ -2,6 +2,17 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
+def attempt(epoch):
+    # 对处理过的数据集中所有数据预测为1（Ture to Size)，正确率都可以达到73.06%
+    group = pd.read_csv("data_proc.txt")
+    dataSet = group[['item_name','height','weight','rating']]
+    labels = group['fit']
+    acc =  0
+    for i in range(epoch):
+        if labels[i] == 1:
+            acc += 1
+    print(acc/epoch*100,"%")
+
 def classify(inX, dataSet, labels, k):
     """
     定义knn算法分类器函数
@@ -65,7 +76,13 @@ if __name__ == '__main__':
     # r = classify_two([0, 0.2], dataSet, labels, 3)
     # r = classify([0, 0.2], dataSet, labels, 3)
     # print(r)
-    epoch = 50000
+    epoch = 1000
+    # 直接对空缺赋所有数的平均值162and140  epoch=500 acc=79%，epoch=1000 acc=78.2%，epoch=2000 acc=77.65%，epoch=20000 acc=76.795
+    # 直接对空缺赋所有数的平均值164and143  epoch=500 acc=78.8%，epoch=1000 acc=78.4%，epoch=2000 acc=78.05%
+    # 直接对空缺赋所有数的平均值164and141  epoch=500 acc=79.2%，epoch=1000 acc=78.7%，epoch=2000 acc=78.15%
+    # 直接对空缺赋所有数的平均值164and140  epoch=500 acc=79.4%，epoch=1000 acc=78.8%，epoch=2000 acc=78.2%
+    # 直接对空缺赋所有数的平均值166and145  epoch=500 acc=78.2%，epoch=1000 acc=77.9%，epoch=2000 acc=77.8%
+    # 对不同类型空缺赋不同的平均值 epoch=500 acc=78%，epoch=1000 acc=77.4%，epoch=2000 acc=77.25%，epoch=20000 acc=76.305
     count = 0
     dataSet, labels = readDataSet()
     for i in tqdm(range(epoch)):
