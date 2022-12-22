@@ -72,11 +72,11 @@ def readDataSet():
     return dataSet, labels
 
 if __name__ == '__main__':
-    # dataSet, labels = createDataSet()
+    dataSet, labels = createDataSet()
     # r = classify_two([0, 0.2], dataSet, labels, 3)
     # r = classify([0, 0.2], dataSet, labels, 3)
     # print(r)
-    epoch = 1000
+    epoch = 2000
     # 直接对空缺赋所有数的平均值162and140  epoch=500 acc=79%，epoch=1000 acc=78.2%，epoch=2000 acc=77.65%，epoch=20000 acc=76.795
     # 直接对空缺赋所有数的平均值164and143  epoch=500 acc=78.8%，epoch=1000 acc=78.4%，epoch=2000 acc=78.05%
     # 直接对空缺赋所有数的平均值164and141  epoch=500 acc=79.2%，epoch=1000 acc=78.7%，epoch=2000 acc=78.15%
@@ -86,7 +86,7 @@ if __name__ == '__main__':
     count = 0
     dataSet, labels = readDataSet()
     for i in tqdm(range(epoch)):
-        r = classify(dataSet[i], dataSet, labels, 10)
+        r = classify(dataSet[i], dataSet[epoch:], labels, 10)
         if(r == labels[i]):
             count += 1
     print("ACC: ", count/epoch*100)
