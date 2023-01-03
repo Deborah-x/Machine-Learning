@@ -26,8 +26,32 @@ for i in range(len(set)-1,-1,-1):#倒叙删除
       del(set[i+1])
 
 #分出训练集和测试集,一个元素是一个代表一个sample的字符串
-test_set = set[:3000]
-train_set = set[3000:]
+# test_set = set[:3000]
+# train_set = set[3000:]
+#得到各1000的测试集
+testnum1 = 0
+testnum2 = 0
+testnum3 = 0
+test_set = []
+train_set = []
+for i in range(len(set)):
+   #words = train_set[i].split(',')#按逗号拆每行
+   line= set[i]
+   if line.__contains__("True to Size") and testnum2 < 1000:
+      test_set.append(line)
+      testnum2 += 1
+   if line.__contains__("Small") and testnum1 < 1000:
+      test_set.append(line)
+      testnum1 += 1
+   if line.__contains__("Large") and testnum3 < 1000:
+      test_set.append(line)
+      testnum3 += 1
+   else:
+      train_set.append(line)
+print(set[1])
+print(test_set[1])
+print(len(test_set))
+
 
 def delete_len1(list):
    for i in range(len(list) - 1, -1, -1):
@@ -121,18 +145,24 @@ def Predict(word_list, label, y_t2s, y_s, y_l):#之后在每个if分支中插入
 for i in range(len(test_set)):
    #words = train_set[i].split(',')#按逗号拆每行
    line= test_set[i]
+   both = 0
    if line.__contains__("True to Size"):
       line = line.replace('True to Size', '')
       word_list = split2word(line.split(','))
       confusion_matrix[2-1][Predict(word_list, 2, y_t2s, y_s, y_l)] += 1
+      both += 1
    if line.__contains__("Small"):
       line = line.replace('Small', '')
       word_list = split2word(line.split(','))
       confusion_matrix[1-1][Predict(word_list, 1, y_t2s, y_s, y_l)] += 1
+      both += 1
    if line.__contains__("Large"):
       line = line.replace('Large', '')
       word_list = split2word(line.split(','))
       confusion_matrix[3-1][Predict(word_list, 3, y_t2s, y_s, y_l)] += 1
+      both += 1
+   if both > 1:
+      print(test_set[i])
 
 accuracy_s = confusion_matrix[0][0]/(confusion_matrix[0][0]+confusion_matrix[1][0]+confusion_matrix[2][0])
 recall_s = confusion_matrix[0][0]/(confusion_matrix[0][0]+confusion_matrix[0][1]+confusion_matrix[0][2])
@@ -140,6 +170,9 @@ accuracy_t2s = confusion_matrix[1][1]/(confusion_matrix[0][1]+confusion_matrix[1
 recall_t2s = confusion_matrix[1][1]/(confusion_matrix[1][0]+confusion_matrix[1][1]+confusion_matrix[1][2])
 accuracy_l = confusion_matrix[2][2]/(confusion_matrix[0][2]+confusion_matrix[1][2]+confusion_matrix[2][2])
 recall_l = confusion_matrix[2][2]/(confusion_matrix[2][0]+confusion_matrix[2][1]+confusion_matrix[2][2])
+print("predict_s is {}".format(confusion_matrix[0][0]+confusion_matrix[1][0]+confusion_matrix[2][0]))
+print("predict_t2s is {}".format((confusion_matrix[0][1]+confusion_matrix[1][1]+confusion_matrix[2][1])))
+print("predict_l is {}".format((confusion_matrix[0][2]+confusion_matrix[1][2]+confusion_matrix[2][2])))
 print("accuracy_s is {}".format(accuracy_s))
 print("recall_s is {}".format(recall_s))
 print("accuracy_t2s is {}".format(accuracy_t2s))
