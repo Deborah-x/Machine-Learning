@@ -58,11 +58,6 @@ def classify_two(inX, dataSet, labels, k):
     sortedClass = sorted(classCount.items(), key=lambda d:d[1], reverse=True)
     return sortedClass[0][0]
 
-def createDataSet():
-    group = np.array([[1, 1.1], [1, 1], [0, 0], [0, 0.1]])
-    labels = ['A', 'A', 'B', 'B']
-    return group, labels
-
 def readDataSet():
     group = pd.read_csv("data_proc.txt")
     dataSet = group[['item_name','height','weight','rating']]
@@ -71,12 +66,40 @@ def readDataSet():
     labels = np.array(labels)
     return dataSet, labels
 
+def TrainSet():
+    group0 = pd.read_csv("data_fit_0.txt")
+    group1 = pd.read_csv("data_fit_1.txt")
+    group2 = pd.read_csv("data_fit_2.txt")
+    dataSet0 = np.array(group0[['item_name','height','weight','rating']])
+    dataSet1 = np.array(group1[['item_name','height','weight','rating']])
+    dataSet2 = np.array(group2[['item_name','height','weight','rating']])
+    labels0 = np.array(group0['fit'])
+    labels1 = np.array(group1['fit'])
+    labels2 = np.array(group2['fit'])
+    dataSet = np.concatenate((dataSet0[:2500, :], dataSet1[:2500, :], dataSet2[:2500, :]), axis=0)
+    labels = np.concatenate((labels0[:2500], labels1[:2500], labels2[:2500]), axis=0)
+    # print(dataSet.size)
+    # print(labels.size)
+    return dataSet, labels
+
+def TestSet():
+    group0 = pd.read_csv("data_fit_0.txt")
+    group1 = pd.read_csv("data_fit_1.txt")
+    group2 = pd.read_csv("data_fit_2.txt")
+    dataSet0 = np.array(group0[['item_name','height','weight','rating']])
+    dataSet1 = np.array(group1[['item_name','height','weight','rating']])
+    dataSet2 = np.array(group2[['item_name','height','weight','rating']])
+    labels0 = np.array(group0['fit'])
+    labels1 = np.array(group1['fit'])
+    labels2 = np.array(group2['fit'])
+    dataSet = np.concatenate((dataSet0[2500:, :], dataSet1[2500:, :], dataSet2[2500:, :]), axis=0)
+    labels = np.concatenate((labels0[2500:], labels1[2500:], labels2[2500:]), axis=0)
+    # print(dataSet.size)
+    # print(labels.size)
+    return dataSet, labels
+
+
 if __name__ == '__main__':
-    dataSet, labels = createDataSet()
-    # r = classify_two([0, 0.2], dataSet, labels, 3)
-    # r = classify([0, 0.2], dataSet, labels, 3)
-    # print(r)
-    epoch = 2000
     # 直接对空缺赋所有数的平均值162and140  epoch=500 acc=79%，epoch=1000 acc=78.2%，epoch=2000 acc=77.65%，epoch=20000 acc=76.795
     # 直接对空缺赋所有数的平均值164and143  epoch=500 acc=78.8%，epoch=1000 acc=78.4%，epoch=2000 acc=78.05%
     # 直接对空缺赋所有数的平均值164and141  epoch=500 acc=79.2%，epoch=1000 acc=78.7%，epoch=2000 acc=78.15%
@@ -84,9 +107,12 @@ if __name__ == '__main__':
     # 直接对空缺赋所有数的平均值166and145  epoch=500 acc=78.2%，epoch=1000 acc=77.9%，epoch=2000 acc=77.8%
     # 对不同类型空缺赋不同的平均值 epoch=500 acc=78%，epoch=1000 acc=77.4%，epoch=2000 acc=77.25%，epoch=20000 acc=76.305
     count = 0
-    dataSet, labels = readDataSet()
+    dataSet, labels = TrainSet()
+    dataSet_test, labels_test = TestSet()
+    epoch = labels_test.size
     for i in tqdm(range(epoch)):
-        r = classify(dataSet[i], dataSet[epoch:], labels, 10)
-        if(r == labels[i]):
+        r = classify(dataSet_test[i], dataSet[:], labels, 20)
+        if(r == labels_test[i]):
             count += 1
-    print("ACC: ", count/epoch*100)
+
+    print("ACC: ", count/(epoch)*100)
