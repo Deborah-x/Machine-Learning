@@ -20,7 +20,7 @@ def affine_forward(x, w, b):
     - cache: (x, w, b)
     """
     out = None
-    
+
 
     x_re = x.reshape(x.shape[0], -1)
     out = np.dot(x_re, w) + b
@@ -48,12 +48,12 @@ def affine_backward(dout, cache):
     x, w, b = cache
     dx, dw, db = None, None, None
 
-    
+
     dx = np.dot(dout, w.T).reshape(x.shape)
     dw = np.dot(x.reshape(x.shape[0], -1).T, dout)
     db = np.sum(dout, axis=0)
 
-    
+
     return dx, dw, db
 
 def relu_forward(x):
@@ -72,7 +72,7 @@ def relu_forward(x):
     out = x.copy()
     out[x<0] = 0
 
-    
+
     cache = x
     return out, cache
 
@@ -88,13 +88,13 @@ def relu_backward(dout, cache):
     - dx: Gradient with respect to x
     """
     dx, x = None, cache
-    
+
 
     dx = np.zeros_like(x)
     dx[x>0] = 1
     dx = dx * dout
 
-    
+
     return dx
 
 
@@ -113,7 +113,7 @@ def softmax_loss(x, y):
     """
     loss, dx = None, None
 
-    
+
 
     num_train = x.shape[0]
     x = x - np.max(x, axis=1, keepdims=True)
@@ -129,7 +129,7 @@ def softmax_loss(x, y):
     dx[range(num_train), y] -= 1
     dx /= num_train
 
-    
+
     return loss, dx
 
 def batchnorm_forward(x, gamma, beta, bn_param):
@@ -180,7 +180,7 @@ def batchnorm_forward(x, gamma, beta, bn_param):
 
     out, cache = None, None
     if mode == "train":
-        
+
 
         sample_mean = np.mean(x, axis=0)
         sample_var = np.var(x, axis=0)
@@ -192,13 +192,13 @@ def batchnorm_forward(x, gamma, beta, bn_param):
 
         cache = (x, x_norm, sample_mean, sample_var, gamma, beta, eps)
 
-        
+
     elif mode == "test":
-        
+
 
         out = gamma * (x - running_mean) / np.sqrt(running_var + eps) + beta
 
-        
+
     else:
         raise ValueError('Invalid forward batchnorm mode "%s"' % mode)
 
@@ -226,21 +226,21 @@ def batchnorm_backward(dout, cache):
     - dbeta: Gradient with respect to shift parameter beta, of shape (D,)
     """
     dx, dgamma, dbeta = None, None, None
-    
+
 
     num_train = dout.shape[0]
 
     (x, x_norm, sample_mean, sample_var, gamma, beta, eps) = cache
     dbeta = np.sum(dout, axis=0)
     dgamma = np.sum(dout * x_norm, axis=0)
-    
+
     dx_norm = dout * gamma
-    dx = dx_norm * (1 / np.sqrt(sample_var+eps)) - dx_norm * (x-sample_mean) / ((sample_var+eps) ** 1.5 ) 
+    dx = dx_norm * (1 / np.sqrt(sample_var+eps)) - dx_norm * (x-sample_mean) / ((sample_var+eps) ** 1.5 )
 
     dx = (1 / np.sqrt(sample_var + eps)) * (dx_norm - (1 / num_train) * ( np.sum(dx_norm, axis=0) \
-      + (1 / (sample_var + eps)) * (x - sample_mean) * np.sum(dx_norm * (x - sample_mean),axis=0)))  
+      + (1 / (sample_var + eps)) * (x - sample_mean) * np.sum(dx_norm * (x - sample_mean),axis=0)))
 
-    
+
 
     return dx, dgamma, dbeta
 
@@ -267,7 +267,7 @@ def layernorm_forward(x, gamma, beta, ln_param):
     """
     out, cache = None, None
     eps = ln_param.get("eps", 1e-5)
-    
+
 
     N, D = x.shape
     sample_mean = np.mean(x, axis=1, keepdims=True)
@@ -276,7 +276,7 @@ def layernorm_forward(x, gamma, beta, ln_param):
     out = x_norm * gamma + beta
     cache = (x, x_norm, sample_mean, sample_var, gamma, beta, eps)
 
-    
+
     return out, cache
 
 def layernorm_backward(dout, cache):
@@ -295,17 +295,17 @@ def layernorm_backward(dout, cache):
     - dbeta: Gradient with respect to shift parameter beta, of shape (D,)
     """
     dx, dgamma, dbeta = None, None, None
-    
+
 
     (x, layer_norm_x, layer_mean, layer_var, gamma, beta, eps) = cache
     N, D = x.shape
     dgamma = np.sum(layer_norm_x * dout, axis=0)
     dbeta = np.sum(dout, axis=0)
     dbnx = dout * gamma
-    dx = (1 / np.sqrt(layer_var + eps)) * (dbnx - (1 / D) * (np.sum(dbnx, axis=1, keepdims=True) 
+    dx = (1 / np.sqrt(layer_var + eps)) * (dbnx - (1 / D) * (np.sum(dbnx, axis=1, keepdims=True)
         + (x - layer_mean) / (layer_var + eps) * np.sum(dbnx * (x - layer_mean), axis=1, keepdims=True)))
 
-    
+
     return dx, dgamma, dbeta
 
 def dropout_forward(x, dropout_param):
@@ -339,18 +339,18 @@ def dropout_forward(x, dropout_param):
     out = None
 
     if mode == "train":
-        
+
 
         mask = (np.random.random(x.shape) < p ) / p
         out = mask * x
 
-        
+
     elif mode == "test":
-       
+
 
         out = x
 
-        
+
 
     cache = (dropout_param, mask)
     out = out.astype(x.dtype, copy=False)
@@ -370,11 +370,11 @@ def dropout_backward(dout, cache):
 
     dx = None
     if mode == "train":
-        
+
 
         dx = dout * mask
 
-        
+
     elif mode == "test":
         dx = dout
     return dx
@@ -406,7 +406,7 @@ def conv_forward_naive(x, w, b, conv_param):
     - cache: (x, w, b, conv_param)
     """
     out = None
-    
+
 
     padding = conv_param['pad']
     stride = conv_param['stride']
@@ -448,7 +448,7 @@ def conv_backward_naive(dout, cache):
     - db: Gradient with respect to b
     """
     dx, dw, db = None, None, None
-    
+
 
     x, w, b, conv_param = cache
     N, C, H, W = x.shape
@@ -477,5 +477,87 @@ def conv_backward_naive(dout, cache):
 
 
 
-    
+
     return dx, dw, db
+
+def max_pool_forward_naive(x, pool_param):
+    """A naive implementation of the forward pass for a max-pooling layer.
+
+    Inputs:
+    - x: Input data, of shape (N, C, H, W)
+    - pool_param: dictionary with the following keys:
+      - 'pool_height': The height of each pooling region
+      - 'pool_width': The width of each pooling region
+      - 'stride': The distance between adjacent pooling regions
+
+    No padding is necessary here, eg you can assume:
+      - (H - pool_height) % stride == 0
+      - (W - pool_width) % stride == 0
+
+    Returns a tuple of:
+    - out: Output data, of shape (N, C, H', W') where H' and W' are given by
+      H' = 1 + (H - pool_height) / stride
+      W' = 1 + (W - pool_width) / stride
+    - cache: (x, pool_param)
+    """
+    out = None
+    
+
+    N, C, H, W = x.shape
+    pool_height = pool_param['pool_height']
+    pool_width = pool_param['pool_width']
+    stride = pool_param['stride']
+
+    assert (H - pool_height) % stride == 0, "Illegal Input dimension of H."
+    assert (W - pool_width) % stride == 0, "Illegal Input dimension of W."
+
+    H_out = 1 + (H - pool_height) // stride
+    W_out = 1 + (W - pool_width) // stride
+
+    out = np.zeros((N, C, H_out, W_out))
+
+    for j in range(H_out):
+      for k in range(W_out):
+        out[:,:,j,k] = np.max(x[:,:,j*stride:j*stride+pool_height, k*stride:k*stride+pool_width], axis=(2,3)) 
+
+    
+    cache = (x, pool_param)
+    return out, cache
+
+
+def max_pool_backward_naive(dout, cache):
+    """A naive implementation of the backward pass for a max-pooling layer.
+
+    Inputs:
+    - dout: Upstream derivatives
+    - cache: A tuple of (x, pool_param) as in the forward pass.
+
+    Returns:
+    - dx: Gradient with respect to x
+    """
+    dx = None
+    
+
+    x, pool_param = cache
+    dx = np.zeros_like(x)
+
+    N, C, H, W = x.shape
+    pool_height = pool_param['pool_height']
+    pool_width = pool_param['pool_width']
+    stride = pool_param['stride']
+
+    assert (H - pool_height) % stride == 0, "Illegal Input dimension of H."
+    assert (W - pool_width) % stride == 0, "Illegal Input dimension of W."
+
+    H_out = 1 + (H - pool_height) // stride
+    W_out = 1 + (W - pool_width) // stride
+
+    for j in range(H_out):
+      for k in range(W_out):
+        x_mask = x[:,:,j*stride:j*stride+pool_height, k*stride:k*stride+pool_width]
+        flags = np.max(x_mask, axis=(2,3), keepdims=True) == x_mask # only the maximum value get a gradient
+        dx[:,:,j*stride:j*stride+pool_height, k*stride:k*stride+pool_width] += flags * (dout[:,:,j,k][:,:,None,None]) 
+    
+
+    
+    return dx
