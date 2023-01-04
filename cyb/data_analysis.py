@@ -33,6 +33,11 @@ def build_data_raw():
 def drop_nan(spath, dpath):
     # 将训练数据集中有空信息的数据扔掉，剩余数据放入一个新文件
     data = pd.read_csv(spath)
+    m, n = data.shape
+    for i in range(m):
+        for j in range(n):
+            x = data.iat[i,j]
+            data.iat[i,j] = str(x).replace('\n',' ')
     data.dropna().to_csv(dpath, index=False)
 
 def get_review(spath, dpath):
@@ -99,9 +104,12 @@ def val_range(path, key):
     df = pd.read_csv(path)
     return set(df[key])
 
+
+
 def proc():
     spath = 'data_raw.txt'
     dpath = 'data_proc.txt'
+    #data = pd.read_csv(spath)
     drop_nan(spath, dpath)
     #get_review(spath,dpath)
     # convert_h(dpath)
@@ -117,8 +125,9 @@ build_data_raw()
 spath = 'data_raw.txt'
 dpath = 'data_proc.txt'
 proc()
-data = pd.read_csv(dpath)
-print(len(data))
+#data = pd.read_csv(dpath)
+#print(len(data))
+
 # print(val_range(dpath, 'fit'))
 # data = pd.read_csv(dpath)[['item_name','height','weight','rating','fit']]
 # print(data.size)

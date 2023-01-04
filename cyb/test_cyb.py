@@ -19,11 +19,11 @@ set = f.readlines()
 del(set [0])
 f.close()
 
-#品名被拆分成两行了，合并成一行
-for i in range(len(set)-1,-1,-1):#倒叙删除
-   if set[i].startswith('"'):
-      set[i] += set[i+1]
-      del(set[i+1])
+
+# for i in range(len(set)-1,-1,-1):#倒叙删除
+#    if set[i].startswith('"'):
+#       set[i] += set[i+1]
+#       del(set[i+1])
 
 #分出训练集和测试集,一个元素是一个代表一个sample的字符串
 # test_set = set[:3000]
@@ -48,9 +48,9 @@ for i in range(len(set)):
       testnum3 += 1
    else:
       train_set.append(line)
-print(set[1])
-print(test_set[1])
-print(len(test_set))
+# print(set[1])
+# print(test_set[1])
+# print(len(test_set))
 
 
 def delete_len1(list):
