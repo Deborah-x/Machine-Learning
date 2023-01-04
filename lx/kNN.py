@@ -67,52 +67,104 @@ def readDataSet():
     return dataSet, labels
 
 def TrainSet():
-    group0 = pd.read_csv("data_fit_0.txt")
-    group1 = pd.read_csv("data_fit_1.txt")
-    group2 = pd.read_csv("data_fit_2.txt")
-    dataSet0 = np.array(group0[['item_name','height','weight','rating']])
-    dataSet1 = np.array(group1[['item_name','height','weight','rating']])
-    dataSet2 = np.array(group2[['item_name','height','weight','rating']])
-    labels0 = np.array(group0['fit'])
-    labels1 = np.array(group1['fit'])
-    labels2 = np.array(group2['fit'])
-    dataSet = np.concatenate((dataSet0[:2500, :], dataSet1[:2500, :], dataSet2[:2500, :]), axis=0)
-    labels = np.concatenate((labels0[:2500], labels1[:2500], labels2[:2500]), axis=0)
+    # group0 = pd.read_csv("data_fit_0.txt")
+    # group1 = pd.read_csv("data_fit_1.txt")
+    # group2 = pd.read_csv("data_fit_2.txt")
+    # dataSet0 = np.array(group0[['item_name','height','weight','rating']])
+    # dataSet1 = np.array(group1[['item_name','height','weight','rating']])
+    # dataSet2 = np.array(group2[['item_name','height','weight','rating']])
+    # labels0 = np.array(group0['fit'])
+    # labels1 = np.array(group1['fit'])
+    # labels2 = np.array(group2['fit'])
+    # dataSet = np.concatenate((dataSet0[:2500, :], dataSet1[:2500, :], dataSet2[:2500, :]), axis=0)
+    # labels = np.concatenate((labels0[:2500], labels1[:2500], labels2[:2500]), axis=0)
     # print(dataSet.size)
     # print(labels.size)
+    labels = np.load('label2vector.npy')
+    dataSet = np.load('data2vector.npy')
     return dataSet, labels
 
 def TestSet():
-    group0 = pd.read_csv("data_fit_0.txt")
-    group1 = pd.read_csv("data_fit_1.txt")
-    group2 = pd.read_csv("data_fit_2.txt")
-    dataSet0 = np.array(group0[['item_name','height','weight','rating']])
-    dataSet1 = np.array(group1[['item_name','height','weight','rating']])
-    dataSet2 = np.array(group2[['item_name','height','weight','rating']])
-    labels0 = np.array(group0['fit'])
-    labels1 = np.array(group1['fit'])
-    labels2 = np.array(group2['fit'])
-    dataSet = np.concatenate((dataSet0[2500:, :], dataSet1[2500:, :], dataSet2[2500:, :]), axis=0)
-    labels = np.concatenate((labels0[2500:], labels1[2500:], labels2[2500:]), axis=0)
+    # group0 = pd.read_csv("data_fit_0.txt")
+    # group1 = pd.read_csv("data_fit_1.txt")
+    # group2 = pd.read_csv("data_fit_2.txt")
+    # dataSet0 = np.array(group0[['item_name','height','weight','rating']])
+    # dataSet1 = np.array(group1[['item_name','height','weight','rating']])
+    # dataSet2 = np.array(group2[['item_name','height','weight','rating']])
+    # labels0 = np.array(group0['fit'])
+    # labels1 = np.array(group1['fit'])
+    # labels2 = np.array(group2['fit'])
+    # dataSet = np.concatenate((dataSet0[2500:, :], dataSet1[2500:, :], dataSet2[2500:, :]), axis=0)
+    # labels = np.concatenate((labels0[2500:], labels1[2500:], labels2[2500:]), axis=0)
     # print(dataSet.size)
     # print(labels.size)
+    labels = np.load('label2vector.npy')
+    dataSet = np.load('data2vector.npy')
     return dataSet, labels
 
 
 if __name__ == '__main__':
-    # 直接对空缺赋所有数的平均值162and140  epoch=500 acc=79%，epoch=1000 acc=78.2%，epoch=2000 acc=77.65%，epoch=20000 acc=76.795
-    # 直接对空缺赋所有数的平均值164and143  epoch=500 acc=78.8%，epoch=1000 acc=78.4%，epoch=2000 acc=78.05%
-    # 直接对空缺赋所有数的平均值164and141  epoch=500 acc=79.2%，epoch=1000 acc=78.7%，epoch=2000 acc=78.15%
-    # 直接对空缺赋所有数的平均值164and140  epoch=500 acc=79.4%，epoch=1000 acc=78.8%，epoch=2000 acc=78.2%
-    # 直接对空缺赋所有数的平均值166and145  epoch=500 acc=78.2%，epoch=1000 acc=77.9%，epoch=2000 acc=77.8%
-    # 对不同类型空缺赋不同的平均值 epoch=500 acc=78%，epoch=1000 acc=77.4%，epoch=2000 acc=77.25%，epoch=20000 acc=76.305
-    count = 0
+    '''
+    epoch = 500, acc = 81.2
+    epoch = 2000, acc = 81.9
+    '''
+    
     dataSet, labels = TrainSet()
     dataSet_test, labels_test = TestSet()
-    epoch = labels_test.size
-    for i in tqdm(range(epoch)):
-        r = classify(dataSet_test[i], dataSet[:], labels, 20)
-        if(r == labels_test[i]):
-            count += 1
+    m, n = dataSet.shape
+    # count = 0
+    # epoch = 2000
+    # for i in tqdm(range(epoch)):
+    #     r = classify(dataSet_test[i], dataSet[:], labels, 5)
+    #     if(r == labels_test[i]):
+    #         count += 1
 
-    print("ACC: ", count/(epoch)*100)
+    # print("ACC: ", count/(epoch)*100)
+
+
+    Store_data = dataSet[0:20]
+    Store_label = labels[0:20]
+    # print(Store_data)
+    # print(dataSet[0].reshape(1,12).shape)
+    # print(Store_label[:].shape)
+    # print(labels[0].reshape(1,1))
+    # acc = []
+    # for t in range(3,10):
+    #     for s in range(3,10):
+    #         for i in tqdm(range(m)):
+    #             r = classify(dataSet[i], Store_data[:], Store_label[:], t)
+    #             if r != labels[i]:
+    #                 Store_data = np.concatenate((Store_data, dataSet[i].reshape(1,12)), axis=0)
+    #                 Store_label = np.append(Store_label, labels[i])
+    #         epoch = 22071
+    #         total = 0
+    #         count = 0
+    #         for i in tqdm(range(epoch)):
+    #             if labels_test[i] == -1:
+    #                 total += 1
+    #                 r = classify(dataSet_test[i], Store_data[:], Store_label[:], s)
+    #                 if(r == labels_test[i]):
+    #                     count += 1
+    #         acc.append(count/total*100)
+    # print(acc)
+    # print(acc.index(max(acc)))
+    # np.save('acc.npy',np.array(acc))
+
+    # （9，9）做到对三个类别分类准确率分别为34.23%，80.21%，34.14%
+    # （10，5）做到对三个类型分类准确率分别为51.69%，70.11%，50.76%
+    count = 0
+    for i in tqdm(range(m)):
+        r = classify(dataSet[i], Store_data[:], Store_label[:], 10)
+        if r != labels[i]:
+            Store_data = np.concatenate((Store_data, dataSet[i].reshape(1,12)), axis=0)
+            Store_label = np.append(Store_label, labels[i])
+    epoch = 22071
+    total = 0
+    count = 0
+    for i in tqdm(range(epoch)):
+        if labels_test[i] == 0:
+            total += 1
+            r = classify(dataSet_test[i], Store_data[:], Store_label[:], 5)
+            if(r == labels_test[i]):
+                count += 1
+    print("ACC: ", count/(total)*100)
