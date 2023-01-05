@@ -32,13 +32,14 @@ def build_data_raw():
 
 def drop_nan(spath, dpath):
     # 将训练数据集中有空信息的数据扔掉，剩余数据放入一个新文件
-    data = pd.read_csv(spath)
-    m, n = data.shape
+    data = pd.read_csv(spath, usecols = ['review_summary','review','fit','rating'])
+    df = data.dropna()
+    m, n = df.shape
     for i in range(m):
         for j in range(n):
-            x = data.iat[i,j]
-            data.iat[i,j] = str(x).replace('\n',' ')
-    data.dropna().to_csv(dpath, index=False)
+            x = df.iat[i,j]
+            df.iat[i,j] = str(x).replace('\n',' ')
+    df.to_csv(dpath, index=False)
 
 def get_review(spath, dpath):
     data = pd.read_csv(spath)[['review','fit']]
