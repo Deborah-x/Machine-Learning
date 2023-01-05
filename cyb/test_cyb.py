@@ -18,12 +18,11 @@ f = open(r"C:/Users/86189/PycharmProjects/MLproject/Machine-Learning/cyb/data_pr
 set = f.readlines()
 del(set [0])
 f.close()
-
-#品名被拆分成两行了，合并成一行
-for i in range(len(set)-1,-1,-1):#倒叙删除
-   if set[i].startswith('"'):
-      set[i] += set[i+1]
-      del(set[i+1])
+data = pd.read_csv('data_proc.txt')
+# for i in range(len(set)-1,-1,-1):#倒叙删除
+#    if set[i].startswith('"'):
+#       set[i] += set[i+1]
+#       del(set[i+1])
 
 #分出训练集和测试集,一个元素是一个代表一个sample的字符串
 # test_set = set[:3000]
@@ -32,25 +31,36 @@ for i in range(len(set)-1,-1,-1):#倒叙删除
 testnum1 = 0
 testnum2 = 0
 testnum3 = 0
-test_set = []
-train_set = []
+test_keyset = []
+train_keyset = []
 for i in range(len(set)):
    #words = train_set[i].split(',')#按逗号拆每行
    line= set[i]
-   if line.__contains__("True to Size") and testnum2 < 1000:
-      test_set.append(line)
+   if data.iat[i,2] == "True to Size" and testnum2 < 1000:
+      test_keyset.append(i)
       testnum2 += 1
-   if line.__contains__("Small") and testnum1 < 1000:
-      test_set.append(line)
+   if data.iat[i,2] == "Small" and testnum1 < 1000:
+      test_keyset.append(i)
       testnum1 += 1
-   if line.__contains__("Large") and testnum3 < 1000:
-      test_set.append(line)
+   if data.iat[i,2] == "Large" and testnum3 < 1000:
+      test_keyset.append(i)
       testnum3 += 1
    else:
-      train_set.append(line)
-print(set[1])
-print(test_set[1])
-print(len(test_set))
+      train_keyset.append(i)
+   # if line.__contains__("True to Size") and testnum2 < 1000:
+   #    test_set.append(line)
+   #    testnum2 += 1
+   # if line.__contains__("Small") and testnum1 < 1000:
+   #    test_set.append(line)
+   #    testnum1 += 1
+   # if line.__contains__("Large") and testnum3 < 1000:
+   #    test_set.append(line)
+   #    testnum3 += 1
+   # else:
+   #    train_set.append(line)
+# print(set[1])
+# print(test_set[1])
+#print(len(test_keyset))
 
 
 def delete_len1(list):
@@ -71,25 +81,26 @@ L_set = []#Large
 T2S_num = 0
 S_num = 0
 L_num = 0
-for i in range(len(train_set)):
-   words = train_set[i].split(',')#按逗号拆每行
-   if words.__contains__("True to Size"):
+for i in train_keyset:
+   words = set[i].split(',')#按逗号拆每行
+   if data.iat[i,2] == "True to Size":
       word = split2word(words)
       T2S_set += word
       T2S_num += 1
-   if words.__contains__("Small"):
+   if data.iat[i,2] == "Small":
       word = split2word(words)
       S_set += word
       S_num += 1
-   if words.__contains__("Large"):
+   if data.iat[i,2] == "Large":
       word = split2word(words)
       L_set += word
       L_num += 1
 
+
 #训练过程
 V_set = list(dict.fromkeys(T2S_set + S_set + L_set))
 V = len(V_set)
-D = len(train_set)
+D = len(train_keyset)
 #true to size
 P_t2s = T2S_num/D
 n_t2s = len(T2S_set)
@@ -142,27 +153,35 @@ def Predict(word_list, label, y_t2s, y_s, y_l):#之后在每个if分支中插入
 
 
 
-for i in range(len(test_set)):
+for i in test_keyset:
    #words = train_set[i].split(',')#按逗号拆每行
-   line= test_set[i]
+   line= set[i]
    both = 0
-   if line.__contains__("True to Size"):
-      line = line.replace('True to Size', '')
-      word_list = split2word(line.split(','))
+   if data.iat[i,2] == "True to Size":
+      line = line.split(',')
+      line.remove("True to Size")
+      word_list = split2word(line)
       confusion_matrix[2-1][Predict(word_list, 2, y_t2s, y_s, y_l)] += 1
       both += 1
-   if line.__contains__("Small"):
-      line = line.replace('Small', '')
-      word_list = split2word(line.split(','))
+   if data.iat[i,2] == "Small":
+      line = line.split(',')
+      line.remove("Small")
+      word_list = split2word(line)
       confusion_matrix[1-1][Predict(word_list, 1, y_t2s, y_s, y_l)] += 1
       both += 1
-   if line.__contains__("Large"):
-      line = line.replace('Large', '')
-      word_list = split2word(line.split(','))
+   if data.iat[i,2] == "Large":
+      line = line.split(',')
+      line.remove("Large")
+      word_list = split2word(line)
       confusion_matrix[3-1][Predict(word_list, 3, y_t2s, y_s, y_l)] += 1
       both += 1
+   # if data.iat[i, 5] == "Large":
+   #    line = line.replace('Large', '')
+   #    word_list = split2word(line.split(','))
+   #    confusion_matrix[3-1][Predict(word_list, 3, y_t2s, y_s, y_l)] += 1
+   #    both += 1
    if both > 1:
-      print(test_set[i])
+      print(set[i])
 
 accuracy_s = confusion_matrix[0][0]/(confusion_matrix[0][0]+confusion_matrix[1][0]+confusion_matrix[2][0])
 recall_s = confusion_matrix[0][0]/(confusion_matrix[0][0]+confusion_matrix[0][1]+confusion_matrix[0][2])
@@ -187,3 +206,24 @@ print("recall_l is {}".format(recall_l))
 # recall_t2s is 0.9951714147754708
 # accuracy_l is 0.2
 # recall_l is 0.0024390243902439024
+
+#predict_s is 31
+# predict_t2s is 2946
+# predict_l is 23
+# accuracy_s is 0.6129032258064516
+# recall_s is 0.019
+# accuracy_t2s is 0.3363883231500339
+# recall_t2s is 0.991
+# accuracy_l is 0.8260869565217391
+# recall_l is 0.019
+
+#'review_summary','review','rating','fit'
+# predict_s is 225
+# predict_t2s is 2751
+# predict_l is 24
+# accuracy_s is 0.6622222222222223
+# recall_s is 0.149
+# accuracy_t2s is 0.35986913849509267
+# recall_t2s is 0.99
+# accuracy_l is 0.75
+# recall_l is 0.018
