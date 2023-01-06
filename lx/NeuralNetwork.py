@@ -1,67 +1,66 @@
 import torch
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
 
 path = "data_proc.txt"
-data = pd.read_csv(path)
+label = np.load('label2vector.npy')
+# label = torch.tensor(label, dtype=torch.float32)
+data = np.load('data2vector.npy')
+# data = torch.tensor(data, dtype=torch.float32)
+m, n = data.shape
 
-data = torch.from_numpy(data.values)   # 输入大小(22071, 5) 前四项是数据，最后一项是标签
-data = data.float()
-# print(data)
+w = np.random.rand(n,1)
+# b = np.random.rand(1,1)
+# b = 0
+print("w0 = ", w)
+# print("b0 = ", b)
 
-class LinearModel(torch.nn.Module):
-    def __init__(self):#构造函数
-        super(LinearModel,self).__init__()
-        self.linear = torch.nn.Linear(4,1)#构造对象，并说明输入输出的维数，第三个参数默认为true，表示用到b
-    def forward(self, x):
-        y_pred = self.linear(x)#可调用对象，计算y=wx+b
-        return  y_pred
+def forward(x):
+    # return np.dot(x, w) + b
+    return np.dot(x, w)
 
-model = LinearModel()#实例化模型
-criterion = torch.nn.MSELoss(reduction='sum')
-#model.parameters()会扫描module中的所有成员，如果成员中有相应权重，那么都会将结果加到要训练的参数集合上
-optimizer = torch.optim.ASGD(model.parameters(),lr=0.01)#lr为学习率
-# 将torch.optim.SGD换成Adagrad Adam adamax ASGD RMSprop Rprop运行比较
+def cost(X, Y):
+    Y_pred = np.zeros(m,1)
+    for i in range(m):
+        Y_pred[i] = forward(X[i])
+    loss = np.sum(np.square(Y_pred - Y))
+    return loss / m
 
-def train(epoch):
-    # running_loss = 0.0
-    for idx, val in enumerate(data, 0):
-        x_data = val[0:4]
-        y_data = val[4]
-        y_pred = model(x_data)
-        optimizer.zero_grad()
-        loss = criterion(torch.squeeze(y_pred),y_data)
-        loss.backward()
-        optimizer.step()
-        # running_loss += loss.item()
-        # if idx % 100 == 99:
-        #     print('[%d, %d] loss: %.3f' % (epoch+1, idx+1, running_loss/100))
-        #     running_loss = 0.0
+def gradient(x, y):
+    delta_w = 2 * np.transpose(x) * (np.dot(x, w) - y)
+    # delta_b = 2 * (np.dot(x, w) - y)
+    # print(delta_w.shape)
+    # print(delta_b.shape)
+    return delta_w
 
-def pred(data):
-    if data < 0.5: 
-        return 0
-    if data >= 0.5 and data < 1.5:
+def closer(pos):
+    if pos <= -0.5:
+        return -1
+    elif pos >= 0.5:
         return 1
-    if data >= 1.5:
-        return 2
-
-def test():
-    correct = 0
-    for i in range(1000):
-        test = data[i]
-        x_test = test[0:4]
-        y_test = test[4]
-        y_pred = pred(model(x_test).data)
-        if y_pred == y_test:
-            correct += 1
-    print("Accuracy: ", correct / 1000 * 100, "%")
+    else:
+        return 0
 
 
 if __name__ == '__main__':
-    train(1)
-    test()
-    print('w=',model.linear.weight)
-    print('b=',model.linear.bias)
+    '''
+    换成12维的数据集之后需要归一化，不然会超范围
+    '''
+    # lr = 0.0001
+    # for epoch in tqdm(range(5000)):
+    #     for i in range(m):
+    #         delta_w = gradient(data[i].reshape(1,n), label[i].reshape(1,1))
+    #         w -= lr * delta_w
+    #         # b -= lr * delta_b
+    # print("w = ", w)
+    # # print("b = ", b)
+    # np.save('w.npy', w)
 
-    
+    w = np.load('w.npy')
+    num = 10000
+    count = 0
+    for i in tqdm(range(num)):
+        if closer(forward(data[i].reshape(1,n))) == label[i]:
+            count += 1
+    print("Acc = ", count*100/num, "%")

@@ -150,21 +150,29 @@ if __name__ == '__main__':
     # print(acc.index(max(acc)))
     # np.save('acc.npy',np.array(acc))
 
-    # （9，9）做到对三个类别分类准确率分别为34.23%，80.21%，34.14%
-    # （10，5）做到对三个类型分类准确率分别为51.69%，70.11%，50.76%
+    # （9，9）做到对三个类别分类准确率分别为29.53%，78.73%，36.56%
+    # （10，5）做到对三个类型分类准确率分别为52.66%，66.92%，53.92%
+    # （9，5）做到对三个类型分类准确率分别为50.53%，69.44%，53.19%
     count = 0
     for i in tqdm(range(m)):
-        r = classify(dataSet[i], Store_data[:], Store_label[:], 10)
+        r = classify(dataSet[i], Store_data[:], Store_label[:], 9)
         if r != labels[i]:
-            Store_data = np.concatenate((Store_data, dataSet[i].reshape(1,12)), axis=0)
+            Store_data = np.concatenate((Store_data, dataSet[i].reshape(1,10)), axis=0)
             Store_label = np.append(Store_label, labels[i])
+    
+    # np.save('Store_data.npy', Store_data)
+    # np.save('Store_label.npy', Store_label)
     epoch = 22071
     total = 0
     count = 0
     for i in tqdm(range(epoch)):
-        if labels_test[i] == 0:
+        if labels_test[i] == 3:
             total += 1
             r = classify(dataSet_test[i], Store_data[:], Store_label[:], 5)
             if(r == labels_test[i]):
                 count += 1
+        # total += 1
+        # r = classify(dataSet_test[i], Store_data[:], Store_label[:], 5)
+        # if(r == labels_test[i]):
+        #     count += 1
     print("ACC: ", count/(total)*100)
