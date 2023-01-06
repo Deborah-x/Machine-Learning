@@ -19,11 +19,11 @@ labels = np.load('label_mix.npy')
 # print(dataSet.shape)  # (22071,80,80),数据均衡后(45000,80,80)
 
 # 尝试用embedding处理数据
-embedding = torch.nn.Embedding(5000, 1000)
+embedding = torch.nn.Embedding(5000, 4000)
 data = np.load('data2embedding.npy')
 m, n = data.shape
 dataSet = embedding(torch.LongTensor(data))
-dataSet = torch.reshape(dataSet, (22071,100,100))
+dataSet = torch.reshape(dataSet, (22071,200,200))
 # print(dataSet.shape)
 #
 labels = torch.tensor(labels, dtype=torch.long)
@@ -35,10 +35,11 @@ labels = labels-1
 class Net(torch.nn.Module):
     def __init__(self):
         super(Net, self).__init__()
-        self.conv1 = torch.nn.Conv2d(1,2,kernel_size=5)
-        self.conv2 = torch.nn.Conv2d(2,3,kernel_size=3, padding=1)
-        self.conv3 = torch.nn.Conv2d(3,4,kernel_size=3, padding=1)
-        self.conv4 = torch.nn.Conv2d(4,5,kernel_size=3, padding=1)
+        self.conv1 = torch.nn.Conv2d(1,5,kernel_size=5, padding=2)
+        self.conv2 = torch.nn.Conv2d(5,10,kernel_size=5)
+        self.conv3 = torch.nn.Conv2d(10,20,kernel_size=3, padding=1)
+        self.conv4 = torch.nn.Conv2d(20,10,kernel_size=3, padding=1)
+        self.conv5 = torch.nn.Conv2d(10,5,kernel_size=3, padding=1)
         self.pooling = torch.nn.MaxPool2d(2)
         self.fc = torch.nn.Linear(180,3)   # fc:full connected layer 全连接层
 
@@ -49,6 +50,7 @@ class Net(torch.nn.Module):
         x = F.relu(self.pooling(self.conv2(x)))
         x = F.relu(self.pooling(self.conv3(x)))
         x = F.relu(self.pooling(self.conv4(x)))
+        x = F.relu(self.pooling(self.conv5(x)))
         x = x.view(batch_size,-1)   # flatten
         x = self.fc(x)
         return x
