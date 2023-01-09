@@ -13,3 +13,6 @@ https://www.kaggle.com/datasets/rmisra/clothing-fit-dataset-for-size-recommendat
 
 服装尺码信息：
 https://www.bankofchina.com/bcservice/bi6/201408/t20140804_3708978.html
+
+latex表格生成:
+https://www.tablesgenerator.com/
