@@ -1,84 +1,95 @@
-import re
 import json
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
+def train_proc(spath:str) -> None:
+    """
+    Data processing for training set
+    :param spath: the path of the training set with the suffix '.json' 
+    """
+    # Load a dataset with the suffix '.json'
+    with open(spath, 'r') as f:
+        dataset = json.load(f)  # type 'list'
 
-def load_dataset():
-    '''
-    加载训练数据集train_data_all.json，返回值为list类型
-    '''
-    path = "train_data_all.json"
-    with open(path, 'r') as f:
-        dataset = json.load(f)
-        return dataset
+    # Convert the training set to type 'dataframe' and put them into a file named dpath
+    dpath = 'train_proc.txt'
+    pd.DataFrame(dataset).to_csv(dpath, index=False)
 
-def build_data_raw():
-    '''
-    将数据集转化为dataframe类型并放入data_raw.txt
-    '''
-    pd.DataFrame(load_dataset()).to_csv('data_raw.txt', index=False)
+    # Discard the data with empty 'fit' index in the training set and put the remaining data into the old file
+    data = pd.read_csv(dpath)
+    data.dropna(subset=['fit']).to_csv(dpath, index=False)
+    
 
-def drop_nan(spath, dpath):
-    '''
-    将训练数据集中有空信息的数据扔掉，剩余数据放入一个新文件
-    '''
-    data = pd.read_csv(spath)
-    data.dropna().to_csv(dpath, index=False)
+def test_proc(spath:str) -> None:
+    """
+    Data processing for testing set
+    :param spath: the path of the testing set with the suffix '.json' 
+    """
+    # Load a dataset with the suffix '.json'
+    with open(spath, 'r') as f:
+        dataset = json.load(f)  # type 'list'
 
-def val_range(path, key):
+    # Convert the training set to type 'dataframe' and put them into a file named dpath
+    dpath = 'test_proc.txt'
+    pd.DataFrame(dataset).to_csv(dpath, index=False)
+
+    # If the test set has no empty 'fit' index, this is useless
+    # Discard the data with empty 'fit' index in the training set and put the remaining data into the old file
+    data = pd.read_csv(dpath)
+    data.dropna(subset=['fit']).to_csv(dpath, index=False)
+
+def val_range(path:str, key:str) -> set:
     '''
-    统计数据集中关键词的范围，返回值为set类型
+    Return the range of keywords in a file
+    :param path: the path of the file we want to search
+    :param key: keywords
     '''
     df = pd.read_csv(path)
-    # print(df.shape)
     return set(df[key])
 
-def proc():
-    build_data_raw()
-    drop_nan('data_raw.txt', 'data_proc.txt')
+def build_dict() -> dict:
+    '''
+    Create a dictionary to store an optional set for each indicator
+    '''
+    path = 'train_proc.txt'
+    df = pd.read_csv(path)
+    item_name_list = list(set(df['item_name']))
+    rented_for_list = list(set(df['rented_for']))
+    usually_wear_list = list(set(df['usually_wear']))
+    size_list = list(set(df['size']))
+    age_list = list(set(df['age']))
+    height_list = list(set(df['height']))
+    bust_size_list = list(set(df['bust_size']))
+    weight_list = list(set(df['weight']))
+    body_type_list = list(set(df['body_type']))
+    price_list = list(set(df['price']))
+    dic = {'item_name':item_name_list, 'rented_for':rented_for_list, 'usually_wear':usually_wear_list, 'size':size_list, 'age':age_list, 'height':height_list, 'bust_size':bust_size_list, 'weight':weight_list, 'body_type':body_type_list, 'price':price_list}
+    return dic
 
-def build_list():
-    dpath = "data_proc.txt"
-    item_name_list = list(val_range(dpath, 'item_name'))
-    user_name_list = list(val_range(dpath, 'user_name'))
-    rented_for_list = list(val_range(dpath, 'rented_for'))
-    usually_wear_list = list(val_range(dpath, 'usually_wear'))
-    size_list = list(val_range(dpath, 'size'))
-    age_list = list(val_range(dpath, 'age'))
-    height_list = list(val_range(dpath, 'height'))
-    bust_size_list = list(val_range(dpath, 'bust_size'))
-    weight_list = list(val_range(dpath, 'weight'))
-    body_type_list = list(val_range(dpath, 'body_type'))
-    rating_list = list(val_range(dpath, 'rating'))
-    price_list = list(val_range(dpath, 'price'))
-    # print(len(item_name_list)+len(user_name_list)+len(rented_for_list)+len(usually_wear_list)+len(size_list)+len(age_list)+len(height_list)+len(bust_size_list)+len(weight_list)+len(body_type_list)+len(rating_list)+len(price_list))
-    voca_list = item_name_list+user_name_list+rented_for_list+usually_wear_list+size_list+age_list+height_list+bust_size_list+weight_list+body_type_list+rating_list+price_list 
-    return voca_list
-
-def data2vector():
-    voca_list = build_list()
-    dataset = pd.read_csv('data_proc.txt')
+def data2vector(spath:str) -> np.ndarray:
+    '''
+    Convert each piece of data into a vector of length 10, and save the converted array in the file 'data2vector.npy' for convenient further use
+    '''
+    dic = build_dict()
+    dataset = pd.read_csv(spath)
     m, n = dataset.shape
-    # X = [0]*len(voca_list)
-    feature = ['item_name', 'user_name', 'rented_for', 'usually_wear', 'size', 'age', 'height', 'bust_size', 'weight', 'body_type', 'rating', 'price']
-    X = np.zeros((m, len(voca_list)))
+    feature = ['item_name', 'rented_for', 'usually_wear', 'size', 'age', 'height', 'bust_size', 'weight', 'body_type', 'price']
+    X = np.zeros((m, 10))
     for i in tqdm(range(m)):
         x = dataset.iloc[i]
         for j in feature:
-            X[i, voca_list.index(x[j])] = 1
+            l = dic[j]
+            if x[j] in l:
+                X[i, feature.index(j)] = l.index(x[j])
+    return X
 
-    np.save('data2vector.npy', X)
-
-
-if __name__ == "__main__":
-    # proc()
-    # data2vector()
-    path ='data_proc.txt'
+def label2vector() -> np.ndarray:
+    '''
+    Convert three categories into number 1,2,3, and save the converted array in the file 'label2vector.npy' for convenient further use
+    '''
+    path ='train_proc.txt'
     data = pd.read_csv(path)
     label = data['fit']
-    label = label.replace(['Small', 'True to Size', 'Large'], [0, 1, 2])
-    np.save('label.npy', label.to_numpy())
-    y = np.load('label.npy')
-    print(y)
+    label = label.replace(['Small', 'True to Size', 'Large'], [1, 2, 3]).to_numpy()
+    return label
