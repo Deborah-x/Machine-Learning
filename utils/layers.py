@@ -561,3 +561,46 @@ def max_pool_backward_naive(dout, cache):
 
     
     return dx
+
+def max_pool1d_naive_forward(x, pool_param):
+    """
+    A naive implementation of the forward pass for a max-pooling1d layer.
+    In this case, we only implement a simple case, where the stride is L.
+    Inputs:
+    - x: Input data, of shape (N, C, L)
+    - pool_param: dictionary with the following keys:
+      - 'kernel_size': Union[int, Tuple[int]], here is L
+      - 'stride': The distance between adjacent pooling regions, here is L
+    Outputs:
+    - out: Output data, of shape (N, C, 1)
+
+    out(i, j, 1) = max_{1}()
+    """
+    stride = pool_param['stride']
+    N, C, L = x.shape
+    assert L % stride == 0, "Illegal Input dimension of L."
+    out = np.max(x, axis=2, keepdims=True)
+    cache = (x, pool_param)
+    return out, cache
+
+def max_pool1d_naive_backward(dout, cache):
+    """A naive implementation of the backward pass for a max-pooling1d layer.
+
+    Inputs:
+    - dout: Upstream derivatives, of shape (N, C, 1)
+    - cache: A tuple of (x, pool_param) as in the forward pass.
+
+    Returns:
+    - dx: Gradient with respect to x, of shape (N, C, L)
+    """
+    x, pool_param = cache
+    dx = np.zeros_like(x)
+    stride = pool_param['stride']
+    N, C, L = x.shape
+    assert L % stride == 0, "Illegal Input dimension of L."
+    for i in range(N):
+        for j in range(C):
+            x_mask = x[i, j, :]
+            flags = np.max(x_mask, axis=0, keepdims=True) == x_mask
+            dx[i, j, :] += flags * dout[i, j]
+    return dx
