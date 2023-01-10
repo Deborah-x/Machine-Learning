@@ -1,4 +1,6 @@
 import numpy as np
+import pickle
+import os
 from utils.layers import conv_forward_naive, conv_backward_naive, max_pool1d_forward_naive, max_pool1d_backward_naive, affine_forward, affine_backward, dropout_forward, dropout_backward, softmax_loss
 from utils.monitor import tic_toc, get_memory
 from utils.optim import sgd, sgd_momentum, rmsprop, adam
@@ -32,6 +34,7 @@ class TextCNN():
         self.seed = np.random.seed() if seed is None else seed
         self.loss_hist = []
         self.acc_hist = []
+        self.save_dir = 'model/'
 
         ### Initialize parameters
         conv_w1 = np.random.normal(loc=0.0, scale=weight_scale, size=(dim_channel, 1, 3, emb_dim))
@@ -165,3 +168,31 @@ class TextCNN():
             self.optim_configs[p] = next_config
 
         return grads
+
+    def save_model(self, best=False, epoch=None):
+        os.mkdir(self.save_path, exist_ok=True)
+        if best:
+            save_path = os.path.join(self.save_dir, 'best_model.pkl')
+            with open(save_path, 'wb') as f:
+                pickle.dump(self, f)
+        else:
+            save_path = os.path.join(self.save_dir, f"epoch{epoch}.pkl")
+            with open(save_path, 'wb') as f:
+                pickle.dump(self, f)
+    
+    def load_model(self, path='best_model.pkl'):
+        if path.startswith('epoch'):
+            print(f"Loading model from {path}")
+        else:
+            print(f"loading best model from {path}")
+        path = os.path.join(self.save_dir, path)
+        self = pickle.load(open(path, 'rb'))
+
+    def get_param(self):
+        return self.params
+
+    def get_acc(self):
+        return self.acc_hist
+
+    def get_loss(self):
+        return self.loss_hist      
