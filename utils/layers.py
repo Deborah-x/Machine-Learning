@@ -562,7 +562,7 @@ def max_pool_backward_naive(dout, cache):
     
     return dx
 
-def max_pool1d_naive_forward(x, pool_param):
+def max_pool1d_forward_naive(x, pool_param):
     """
     A naive implementation of the forward pass for a max-pooling1d layer.
     In this case, we only implement a simple case, where the stride is L.
@@ -583,7 +583,7 @@ def max_pool1d_naive_forward(x, pool_param):
     cache = (x, pool_param)
     return out, cache
 
-def max_pool1d_naive_backward(dout, cache):
+def max_pool1d_backward_naive(dout, cache):
     """A naive implementation of the backward pass for a max-pooling1d layer.
 
     Inputs:
