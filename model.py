@@ -1,6 +1,8 @@
 import numpy as np
 import pickle
 import os
+from tqdm import tqdm
+import time
 from utils.layers import conv_forward_naive, conv_backward_naive, max_pool1d_forward_naive, max_pool1d_backward_naive, affine_forward, affine_backward, dropout_forward, dropout_backward, softmax_loss
 from utils.monitor import tic_toc, get_memory
 from utils.optim import sgd, sgd_momentum, rmsprop, adam
@@ -46,6 +48,11 @@ class TextCNN():
         w = np.random.normal(loc=0.0, scale=weight_scale, size=(dim_channel*3, num_classes))
         b = np.zeros(num_classes)
 
+        self.conv_param = {'pad':0, 'stride':1}
+        self.pool_param1 = {'kernel_size':dim_channel-2, 'stride':dim_channel-2}
+        self.pool_param2 = {'kernel_size':dim_channel-3, 'stride':dim_channel-3}
+        self.pool_param3 = {'kernel_size':dim_channel-4, 'stride':dim_channel-4}
+
         ### store them in self.params
         self.params = {}
         self.params['conv_w1'] = conv_w1
@@ -69,7 +76,7 @@ class TextCNN():
     @tic_toc
     def train(self, X, Y, optim:str, batch_size=None, epochs=1000, lr=1e-3,  print_every=10, verbose=False):
         optim_dict = {'sgd':sgd, 'sgd_momentum':sgd_momentum, 'rmsprop':rmsprop, 'adam':adam}
-        optim = optim_dict.get(optim.lower(), default=adam)
+        optim = optim_dict.get(optim.lower(), adam)
         self.optim_config['learning_rate'] = lr
 
         for p in self.params:
@@ -80,17 +87,21 @@ class TextCNN():
         if batch_size is None:
             batch_size = X.shape[0]
 
+        proc_bar = tqdm(total=epochs, desc='Training', position=0, leave=True)
         for i in range(epochs):
+            tic = time.time()
             batch_mask = np.random.choice(X.shape[0], batch_size)
             X_batch , Y_batch = X[batch_mask], Y[batch_mask]
-            pred_y, caches = self.predict(X_batch)
+            pred_y, caches = self.predict(X_batch, Y_batch)
             loss, dout = softmax_loss(pred_y, Y_batch)
             self.loss_hist.append(loss)
-            acc = np.mean(np.argmax(pred_y, Y_batch))
+            acc = np.mean(np.argmax(pred_y, axis=1) == Y_batch)
             self.acc_hist.append(acc)
-            self.backward(dout, caches, optim, lr)
+            self.backward(dout, caches, optim)
+            toc = time.time()
+            proc_bar.update(1)
             if i % print_every == 0:
-                print(f"Epoch {i:3d}: loss {loss} accuracy {acc}")
+                print(f"Epoch {i:3d}: loss {loss:4f} accuracy {acc:4f}")
                 if verbose:
                     get_memory(verbose=True)
 
@@ -109,21 +120,23 @@ class TextCNN():
         self.dropout_param['mode'] = 'test' if y is None else 'train'
 
         X = X.reshape(X.shape[0], 1, X.shape[1], X.shape[2])
+
         conv_x1, cache1 = conv_forward_naive(X, self.params['conv_w1'], self.params['conv_b1'], self.conv_param)
         conv_x1 = conv_x1.squeeze(-1)
-        pool_x1, cache4 = max_pool1d_forward_naive(conv_x1, self.pool_param)
+        pool_x1, cache4 = max_pool1d_forward_naive(conv_x1, self.pool_param1)
 
-        conv_x2, cache2 = conv_forward_naive(pool_x1, self.params['conv_w2'], self.params['conv_b2'], self.conv_param)
+        conv_x2, cache2 = conv_forward_naive(X, self.params['conv_w2'], self.params['conv_b2'], self.conv_param)
         conv_x2 = conv_x2.squeeze(-1)
-        pool_x2, cache5 = max_pool1d_forward_naive(conv_x2, self.pool_param)
+        pool_x2, cache5 = max_pool1d_forward_naive(conv_x2, self.pool_param2)
 
-        conv_x3, cache3 = conv_forward_naive(pool_x2, self.params['conv_w3'], self.params['conv_b3'], self.conv_param)
+        conv_x3, cache3 = conv_forward_naive(X, self.params['conv_w3'], self.params['conv_b3'], self.conv_param)
         conv_x3 = conv_x3.squeeze(-1)
-        pool_x3, cache6 = max_pool1d_forward_naive(conv_x3, self.pool_param)
+        pool_x3, cache6 = max_pool1d_forward_naive(conv_x3, self.pool_param3)
         
-        fc_x = np.concatenate(pool_x1, pool_x2, pool_x3, axis=1)
-        fc_x, cache7 = dropout_forward(fc_x, self.dropout_param)
+        fc_x = np.concatenate([pool_x1, pool_x2, pool_x3], axis=1)
         out_x = fc_x.squeeze(-1)
+        out_x, cache7 = dropout_forward(out_x, self.dropout_param)
+        
 
         logit, cache8 = affine_forward(out_x, self.params['w'], self.params['b'])
         caches = [cache1, cache2, cache3, cache4, cache5, cache6, cache7, cache8]
@@ -141,15 +154,15 @@ class TextCNN():
         grads['w'] = dw + reg * self.params['w'] 
         grads['b'] = db
         dout = dropout_backward(dout, cache7)
-        dout = dout.unsqueeze(-1)
+        dout = np.expand_dims(dout, axis=-1)
         dim_channel = dout.shape[1] // 3
         dout1, dout2, dout3 = dout[:, :dim_channel, :], dout[:, dim_channel:2*dim_channel, :], dout[:, 2*dim_channel:, :]
         dout1 = max_pool1d_backward_naive(dout1, cache4)
         dout2 = max_pool1d_backward_naive(dout2, cache5)
         dout3 = max_pool1d_backward_naive(dout3, cache6)
-        dout1 = dout1.unsqueeze(-1)
-        dout2 = dout2.unsqueeze(-1)
-        dout3 = dout3.unsqueeze(-1)
+        dout1 = np.expand_dims(dout1, axis=-1)
+        dout2 = np.expand_dims(dout2, axis=-1)
+        dout3 = np.expand_dims(dout3, axis=-1)
         dout1, dw1, db1 = conv_backward_naive(dout1, cache1)
         dout2, dw2, db2 = conv_backward_naive(dout2, cache2)
         dout3, dw3, db3 = conv_backward_naive(dout3, cache3)
@@ -160,7 +173,7 @@ class TextCNN():
         grads['conv_w3'] = dw3 + reg * self.params['conv_w3']
         grads['conv_b3'] = db3
 
-        for p, w in self.params.item():
+        for p, w in self.params.items():
             dw = grads[p]
             config = self.optim_configs[p]
             next_w, next_config = optim(w, dw, config)
@@ -196,3 +209,9 @@ class TextCNN():
 
     def get_loss(self):
         return self.loss_hist      
+
+if __name__ == '__main__':
+    test_x = np.random.randn(100, 100, 200)
+    test_y = np.random.randint(0, 2, (100, 1))
+    model = TextCNN()
+    model.train(test_x, test_y, optim='adam', epochs=10, print_every=1, verbose=True)
