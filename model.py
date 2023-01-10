@@ -183,7 +183,8 @@ class TextCNN():
         return grads
 
     def save_model(self, best=False, epoch=None):
-        os.mkdir(self.save_path, exist_ok=True)
+        if os.path.exists(self.save_dir) is False:
+            os.mkdir(self.save_dir)
         if best:
             save_path = os.path.join(self.save_dir, 'best_model.pkl')
             with open(save_path, 'wb') as f:
