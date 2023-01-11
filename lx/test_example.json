@@ -1,0 +1,38 @@
+[
+    {
+        "item_name": "GAUGE81\nRueda Jumpsuit",
+        "price": "$420",
+        "rented_for": "",
+        "usually_wear": "12",
+        "size": "XL",
+        "age": "39",
+        "height": "5' 10\"",
+        "bust_size": "38D",
+        "weight": "180LBS",
+        "body_type": "FULL BUST"
+    },
+    {
+        "item_name": "Vanessa Bruno\nPoplia Sweater",
+        "price": "$380",
+        "rented_for": "",
+        "usually_wear": "8",
+        "size": "M",
+        "age": "38",
+        "height": "5' 7\"",
+        "bust_size": "",
+        "weight": "155LBS",
+        "body_type": ""
+    },
+    {
+        "item_name": "Polo Ralph Lauren\nPlaid Kirra Blazer",
+        "price": "$598",
+        "rented_for": "Work",
+        "usually_wear": "4",
+        "size": "6",
+        "age": "43",
+        "height": "137LBS",
+        "bust_size": "34C",
+        "weight": "5' 5",
+        "body_type": "ATHLETIC"
+    }
+]
