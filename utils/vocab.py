@@ -4,12 +4,8 @@ import re
 from tqdm import tqdm
 from pprint import pprint
 import json
+import pickle
 import matplotlib.pyplot as plt
-try:
-    from keras.models import Input, Model
-    from keras.layers import Dense
-except:
-    pass
 try:
     from .layers import *
     from .layer_utils import *
@@ -29,7 +25,7 @@ def clean_text( text:str )->str:
     """
     # Clean text
     punctuations = r"""!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~"""
-    stop_words = ['a', 'the', 'is', 'and', 'be', ]
+    stop_words = ['a', 'the', 'is', 'and', 'be', 'to', 'are', 'am']
     # Cleaning the urls
     text = re.sub(r"http?s://\S+|www\.\S+", "", text)
 
@@ -103,7 +99,7 @@ def create_unique_word_dict(text:list) -> dict:
 
     return unique_word_dict
 
-def create_one_hot(unique_word_dict):
+def create_one_hot(unique_word_dict, word_lists):
     """
     A method that creates a one hot encoding for the unique words
     """
@@ -123,8 +119,8 @@ def create_one_hot(unique_word_dict):
         context_word_index = unique_word_dict.get(word_list[1])
 
         # Creating the placeholders   
-        X_row = np.zeros(n_words)
-        Y_row = np.zeros(n_words)
+        X_row = np.zeros(n_words, dtype=np.int32)
+        Y_row = np.zeros(n_words, dtype=np.int32)
 
         # One hot encoding the main word
         X_row[main_word_index] = 1
@@ -288,24 +284,127 @@ class manualNN():
     def get_param(self):
         return self.params
 
-def test():
-    X = np.random.randn(1000, 10)
-    X = (X - X.mean(axis=0)) / X.std(axis=0)
-    W = np.array([[0.1, 0.2], [0.2, 0.1]]).repeat(5, axis=0)
-    y = np.dot(X, W) + np.random.random((1000, 2)) * 0.1
-    y = y.argmax(axis=1).reshape(-1, 1)
-    model = manualNN(X.shape[1], [], 2, reg=1, weight_scale=0.2)
-    model.train(X, y, optim='adam', epochs=1000, lr=0.01, batch_size=256)
-    print(model.get_param()['W1'])
-    print(model.get_param()['b1'])
+def get_embedding(path='model/emb.pkl'):
+    """
+    This function takes 2100 reviews(this number is limited by poor memory capicity of laptop) 
+    as input to train an simple neural network, and return a dictionary, where the key is a unique word
+    and the value is the numeric vector.
 
+    Neural network structure:
+    input -> fully connected layer -> fully connected layer -> softmax layer
+
+    The weight of the first connected layer is the so-called embedding.
+    """
+    if os.path.exists(path):
+        with open(path, 'rb') as f:
+            embedding_dict = pickle.load(f)
+        return embedding_dict
+    data = json.load(open('train_data_all.json', 'r'))
+    df = pd.DataFrame(data)
+    # extract review and fit to a new dadtaframe
+    df = df[['review', 'fit']]
+    # drop the items whose fit attribute is missing, and review attribute is meaningless
+    # After droping we get 53464 items
+    df.drop(index=df[df['fit']==""].index, inplace=True)
+    df.drop(index=df[df['review']==""].index, inplace=True)
+    df.drop(index=df[df['review']=='.'].index, inplace=True)
+    df.drop(index=df[df['review']=='na'].index, inplace=True)
+    df.drop(index=df[df['review']=='-'].index, inplace=True)
+    df.drop(index=df[df['review']=='x'].index, inplace=True)
+
+    print(df.describe())
+
+    # we only use the 2,100 random items in case of overflow
+    df = df.sample(frac=1)
+    df = df[:2100]
+    print(df.value_counts('fit'))
+    
+
+    # extract review to a list, where each element is a string
+    review = df['review'].tolist()
+
+    all_text, word_lists = create_context_dictionary(review)
+    unique_word_dict = create_unique_word_dict(all_text)
+    words, X, Y = create_one_hot(unique_word_dict, word_lists)
+    x, y = X, Y.argmax(axis=1).reshape(-1, 1)
+    embed_size = 100
+
+    ### using a simple neural network to train
+    model = manualNN(X.shape[1], [embed_size], Y.shape[1], weight_scale=1)
+    model.train(x, y, optim='adam', epochs=100, lr=0.001, batch_size=100, print_every=10, verbose=True)
+    weights = model.get_param()['W1']
+
+    # Creating a dictionary to store the embeddings in. The key is a unique word and 
+    # the value is the numeric vector
+    embedding_dict = {}
+    for word in words:
+        embedding_dict.update({word: weights[unique_word_dict[word]]})    
+
+    ### save embedding_dict to emb.pkl
+    with open('emb.pkl', 'wb') as f:
+        pickle.dump(embedding_dict, f)
+
+    return embedding_dict
+
+def preprocess(embed_dict, num=10000, train_test_split=0.8):
+    data = json.load(open('train_data_all.json', 'r'))
+    df = pd.DataFrame(data)
+    # extract review and fit to a new dadtaframe
+    df = df[['review', 'fit']]
+    # drop the items whose fit attribute is missing, and review attribute is meaningless
+    # After droping we get 53464 items
+    df.drop(index=df[df['fit']==""].index, inplace=True)
+    df.drop(index=df[df['review']==""].index, inplace=True)
+    df.drop(index=df[df['review']=='.'].index, inplace=True)
+    df.drop(index=df[df['review']=='na'].index, inplace=True)
+    df.drop(index=df[df['review']=='-'].index, inplace=True)
+    df.drop(index=df[df['review']=='x'].index, inplace=True)
+
+    df = df.sample(frac=1)
+    df = df[:num]
+    print(df.value_counts('fit'))
+    X = df['review'].tolist()
+    y = df['fit'].tolist()
+
+    # X[i] contains the review of the i-th item, and y[i] contains the fit attribute of the i-th item
+    # clean the reviews and convert to ebmedding vectors using the embedding_dict
+    # convert y to 1('True to Size'), 2('Small'), 3('Large')
+    def convert_to_embedding(text, embed_dict):
+        words_max_length = 100
+        embed_size = 100
+        embed_vec = np.zeros((100, embed_size))
+        for i in range(min(words_max_length, len(text))):
+            embed_vec[i, :] = embed_dict.get(text[i], np.zeros((embed_size,)))
+        return embed_vec
+    
+    for i in range(len(X)):
+        X[i] = clean_text(X[i])
+        X[i] = convert_to_embedding(X[i], embed_dict)
+        if y[i] == 'True to Size':
+            y[i] = 0
+        elif y[i] == 'Small':
+            y[i] = 1
+        elif y[i] == 'Large':
+            y[i] = 2
+
+    # X.shape: (num, 100, embed_size)
+    X = np.array(X)
+    y = np.array(y).reshape(-1, 1)
+
+    x_train = X[:int(num*train_test_split)]
+    y_train = y[:int(num*train_test_split)]
+    x_test = X[int(num*train_test_split):]
+    y_test = y[int(num*train_test_split):]
+
+    return (x_train, y_train), (x_test, y_test)
+    
 
 if __name__ == '__main__':
     texts = pd.read_csv('sample.csv')
     texts = [x for x in texts['text']]
     all_text, word_lists = create_context_dictionary(texts)
     unique_word_dict = create_unique_word_dict(all_text)
-    words, X, Y = create_one_hot(unique_word_dict)
+    words, X, Y = create_one_hot(unique_word_dict, word_lists)
     x, y = X, Y.argmax(axis=1).reshape(-1, 1)
     embed_size = 2
 
@@ -330,43 +429,3 @@ if __name__ == '__main__':
         plt.scatter(coord[0], coord[1])
         plt.annotate(word, (coord[0], coord[1]))
     plt.show()
-
-
-    # ### using the library
-    # # Defining the neural network
-    # inp = Input(shape=(X.shape[1],))
-    # x = Dense(units=embed_size, activation='linear')(inp)
-    # x = Dense(units=Y.shape[1], activation='softmax')(x)
-    # model = Model(inputs=inp, outputs=x)
-    # model.compile(loss = 'categorical_crossentropy', optimizer = 'adam', metrics=['accuracy'])
-
-    # # Optimizing the network weights
-    # model.fit(
-    #     x=X, 
-    #     y=Y, 
-    #     batch_size=256,
-    #     epochs=1000
-    #     )
-    # y_pred = model.predict(X[:10])
-    # print(f"Predictions: {y_pred}")
-    # # Obtaining the weights from the neural network. 
-    # # These are the so called word embeddings
-
-    # # The input layer 
-    # weights = model.get_weights()[0]
-
-    # # Creating a dictionary to store the embeddings in. The key is a unique word and 
-    # # the value is the numeric vector
-    # embedding_dict = {}
-    # for word in words: 
-    #     embedding_dict.update({
-    #         word: weights[unique_word_dict.get(word)]
-    #     })
-    # import matplotlib.pyplot as plt
-    # plt.figure(figsize=(10, 10))
-    # for word in list(unique_word_dict.keys()):
-    #     coord = embedding_dict.get(word)
-    #     plt.scatter(coord[0], coord[1])
-    #     plt.annotate(word, (coord[0], coord[1]))
-    # plt.show()
-    
